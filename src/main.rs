@@ -47,8 +47,39 @@ fn generic_dac(ev: &mut InputEvent, _: mpsc::Sender<InputEvent>) {
     *ev = InputEvent::new(EventType::ABSOLUTE, type_value.0, type_value.1);
 }
 
+fn rg351m(ev: &mut InputEvent, _: mpsc::Sender<InputEvent>) {
+    let InputEventKind::Key(key) = ev.kind() else { return };
+    // yes this is for real. maybe the engineers were drunk, *shrugs*
+    let new_ev = match key {
+        // abxy
+        Key::BTN_EAST       => InputEvent::new(EventType::KEY, Key::BTN_SOUTH.0, ev.value()),
+        Key::BTN_SOUTH      => InputEvent::new(EventType::KEY, Key::BTN_EAST.0, ev.value()),
+        Key::BTN_NORTH      => InputEvent::new(EventType::KEY, Key::BTN_WEST.0, ev.value()),
+        Key::BTN_C          => InputEvent::new(EventType::KEY, Key::BTN_NORTH.0, ev.value()),
+        // thumb buttons
+        Key::BTN_TL2        => InputEvent::new(EventType::KEY, Key::BTN_THUMBL.0, ev.value()),
+        Key::BTN_TR2        => InputEvent::new(EventType::KEY, Key::BTN_THUMBR.0, ev.value()),
+        // shoulders
+        Key::BTN_WEST       => InputEvent::new(EventType::KEY, Key::BTN_TL.0, ev.value()),
+        Key::BTN_Z          => InputEvent::new(EventType::KEY, Key::BTN_TR.0, ev.value()),
+        // triggers
+        Key::BTN_SELECT     => InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Z.0, ev.value() * MAX_OUT_TRIG),
+        Key::BTN_START      => InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_RZ.0, ev.value() * MAX_OUT_TRIG),
+        // select start
+        Key::BTN_TR         => InputEvent::new(EventType::KEY, Key::BTN_SELECT.0, ev.value()),
+        Key::BTN_TL         => InputEvent::new(EventType::KEY, Key::BTN_START.0, ev.value()),
+        _ => return,
+    };
+    *ev = new_ev;
+}
+
 // TODO: multiple remap quirks
 fn get_remap_fn(dev: &mut Device) -> Option<fn(&mut InputEvent, mpsc::Sender<InputEvent>)> {
+    let inputid = dev.input_id();
+    if inputid.vendor() == 0x1209 && inputid.product() == 0x3100 {
+        log_info("Applying rg351m quirk");
+        return Some(rg351m);
+    }
     if has_key(&dev, Key::BTN_DPAD_LEFT) {
         log_info("Applying generic_dac quirk");
         return Some(generic_dac);
