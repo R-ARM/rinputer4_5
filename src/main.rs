@@ -138,7 +138,7 @@ fn input_handler(tx: mpsc::Sender<InputEvent>, mut dev: Device) -> Result<()> {
             } else {
                 MIN_OUT_ANALOG
             };
-            if (v - cmp_against).abs() < 100 {
+            if (v - cmp_against).abs() < 100 || v == 0 {
                 1
             } else {
                 cmp_against / v
@@ -154,7 +154,7 @@ fn input_handler(tx: mpsc::Sender<InputEvent>, mut dev: Device) -> Result<()> {
             } else {
                 MAX_OUT_ANALOG
             };
-            if (v - cmp_against).abs() < 100 {
+            if (v - cmp_against).abs() < 100 || v == 0 {
                 1
             } else {
                 cmp_against / v
